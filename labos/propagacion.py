@@ -1,7 +1,5 @@
 import numpy as np
 from sympy import symbols, lambdify, diff
-
-# Sí, una lista enorme de funciones.
 from sympy import log, sin, exp, cos, tan, sqrt, pi, atan, asin, acos, Abs, cot, sec, csc, sinc, acot, asec, acsc, atan2, sinh, cosh, tanh, coth, sech, csch, asinh, acosh, atanh, acoth, asech, root, Piecewise
 
 class Propagacion_errores:
