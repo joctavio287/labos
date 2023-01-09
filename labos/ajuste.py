@@ -1,7 +1,6 @@
 from sklearn.preprocessing import PolynomialFeatures
 from scipy.optimize import curve_fit
-# from labos.propagacion import Propagacion_errores
-from propagacion import Propagacion_errores
+from labos.propagacion import Propagacion_errores
 import numpy as np, matplotlib.pyplot as plt, re, os
 
 class Ajuste:
@@ -445,7 +444,6 @@ if __name__ == '__main__':
     aj.parametros
     aj.bondad()
     aj.cov_parametros
-
     aj.bondad()
 
     # # EJEMPLO CON DOMINIO 2D
