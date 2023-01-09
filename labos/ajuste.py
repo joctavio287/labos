@@ -329,7 +329,7 @@ class Ajuste:
             # Creo la figura y grafico
             fig, ax = plt.subplots(nrows = 1, ncols = 1)
             ax.scatter(x = self.x, y = self.y, s = 5, color = 'black', label = 'Datos')
-            ax.errorbar(self.x, self.y, yerr = self.sigma_y.reshape(-1), marker = '.', fmt = 'None', capsize = 1.5, color = 'black', label = 'Error de los datos')
+            ax.errorbar(self.x.reshape(-1), self.y.reshape(-1), yerr = self.sigma_y.reshape(-1), marker = '.', fmt = 'None', capsize = 1.5, color = 'black', label = 'Error de los datos')
             ax.plot(x_auxiliar, ajuste, 'r-', label = 'Ajuste', alpha = .5)
             ax.set_xlabel(xlabel = label_x)
             ax.set_ylabel(ylabel = label_y)
@@ -389,7 +389,7 @@ class Ajuste:
             # Creo la figura y grafico
             fig, ax = plt.subplots(nrows = 1, ncols = 1)
             ax.scatter(x = self.x, y = self.y, s = 5, color = 'black', label = 'Datos')
-            ax.errorbar(self.x, self.y, yerr = self.sigma_y.reshape(-1), marker = '.', fmt = 'None', capsize = 1.5, color = 'black', label = 'Error de los datos')
+            ax.errorbar(self.x.reshape(-1), self.y.reshape(-1), yerr = self.sigma_y.reshape(-1), marker = '.', fmt = 'None', capsize = 1.5, color = 'black', label = 'Error de los datos')
             ax.plot(x_auxiliar, ajuste, 'r-', label = 'Ajuste', alpha = .5)
             ax.plot(x_auxiliar, ajuste + franja_error, '--', color = 'green', label = 'Error del ajuste')
             ax.plot(x_auxiliar, ajuste - franja_error, '--', color = 'green')
@@ -444,7 +444,6 @@ if __name__ == '__main__':
     aj.parametros
     aj.bondad()
     aj.cov_parametros
-    aj.bondad()
 
     # # EJEMPLO CON DOMINIO 2D
     # x_1 = np.linspace(0, 100, 70).reshape(-1,1)
