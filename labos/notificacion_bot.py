@@ -25,4 +25,6 @@ if __name__ == '__main__':
     # url = f'https://api.telegram.org/bot{token}/getUpdates'
     # print(requests.get(url).json())
     # chat_id = 1034347542
+    
+    # Prueba de si los mensajes funcionan
     mensaje_tel('Los mensajes funcionan')
