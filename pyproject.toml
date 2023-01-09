@@ -1,12 +1,18 @@
 [tool.poetry]
 name = "labos"
 version = "0.1.0"
-description = ""
+description = "Paquete para trabajar en el labo"
 authors = ["joctavio287 <joctavio287@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+sklearn = "^0.0.post1"
+numpy = "^1.24.1"
+pandas = "^1.5.2"
+matplotlib = "^3.6.2"
+sympy = "^1.11.1"
+telegram = "^0.0.1"
 
 
 [build-system]
