@@ -690,17 +690,6 @@ files = [
 mpmath = ">=0.19"
 
 [[package]]
-name = "telegram"
-version = "0.0.1"
-description = "Telegram APIs"
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "telegram-0.0.1.tar.gz", hash = "sha256:d405a0af4c868a8dbeae6d03e297e21c7ee6269e11e2ed3810e15544aba02591"},
-]
-
-[[package]]
 name = "threadpoolctl"
 version = "3.1.0"
 description = "threadpoolctl"
@@ -732,4 +721,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.11.1"
-content-hash = "16de3378d0501285cc77b0b5f5a7038ae8095ef06a2efa6f783755278d21da49"
+content-hash = "0f52efcea65aed1bb4a5ed60133fbf0ac68567f17f1a1ea22a638f0f49c355fc"
