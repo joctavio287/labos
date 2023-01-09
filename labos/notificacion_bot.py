@@ -9,7 +9,6 @@ def mensaje_tel(mensaje: str = 'Termino de correr el script'):
     '''
     api_token = '5448153732:AAGhKraJQquEqMfpD3cb4rnTcrKB6U1ViMA'
     api_url = f'https://api.telegram.org/bot{api_token}/sendMessage'
-    # api_url = f'https://api.telegram.org/bot{api_token}/sendPhoto'
     chat_id = '1034347542'
     try:
         response = requests.post(api_url, json={'chat_id': chat_id, 'text': mensaje})
