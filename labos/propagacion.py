@@ -1,4 +1,4 @@
-import numpy as np, re
+import numpy as np
 from sympy import symbols, lambdify, diff
 
 # Sí, una lista enorme de funciones.
