@@ -75,7 +75,6 @@ class Propagacion_errores:
         '''
         simbolos = [i for i,j in self.variables]
         valores = [j for i,j in self.variables]
-        covar_simb = {(simbolos[index[0]], simbolos[index[1]]) : value for index, value in np.ndenumerate(self.covarianza)}
         
         # Defino como símbolos las variables de las cuales depende la expresión:
         for sim in simbolos:
@@ -90,12 +89,12 @@ class Propagacion_errores:
         formula = eval(self.formula)
         
         # Calculo la aproximación lineal de la covarianza de el i-ésimo dato con el j-ésimo y sumo:
-        derivadas_parciales = {sim:diff(formula, eval(sim)) for sim in simbolos}
+        derivadas_parciales = [diff(formula, eval(sim)) for sim in simbolos]
         covarianza_resultado = 0
-        for sim in simbolos:
-            for sim_2 in simbolos:
-                covarianza_resultado += derivadas_parciales[sim]*covar_simb[(sim, sim_2)]*derivadas_parciales[sim_2]
-        
+        for i in range(len(simbolos)):
+            for j in range(len(simbolos)):
+                covarianza_resultado += derivadas_parciales[i]*self.covarianza[i, j]*derivadas_parciales[j]
+                
         # Fórmula del error simbólico
         error_simbolico = sqrt(covarianza_resultado)
 
