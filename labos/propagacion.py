@@ -18,6 +18,11 @@ class Propagacion_errores:
         iables. Se debe respetar el orden pasado en 'variables' y 'formula'. Las dimensiones del ar
         ray deben ser (cantidad_de_var, 1) o (cantidad_de_var, cantidad_de_var) si se pasa la matri
         z de covarianza.
+
+        dominio: np.array[opcional]: dentro de 'formula' se reserva la variable 'x' para ser reempl
+        azada por el array proporcionado en esta variable. De esta forma al pasar 'dominio', la pro
+        pagación devolvera una tupla con dos np.ndarrays: valores y errores (respectivamente) de ca
+        da dato dentro del 'dominio' proporcionado.
         '''
         # Variables importantes e hiperparámetros usados dentro de la clase
         self.formula = formula
@@ -70,33 +75,34 @@ class Propagacion_errores:
         '''
         simbolos = [i for i,j in self.variables]
         valores = [j for i,j in self.variables]
+        covar_simb = {(simbolos[index[0]], simbolos[index[1]]) : value for index, value in np.ndenumerate(self.covarianza)}
         
         # Defino como símbolos las variables de las cuales depende la expresión:
         for sim in simbolos:
             globals()[sim] = symbols(sim, real = True)
 
-        # Si se pasa dominio se agrega la variable x_ que es muda
+        # Si se pasa dominio se agrega la variable x que es muda
         if isinstance(self.dominio, np.ndarray):
-            x_ = symbols('x_', real = True)
+            x = symbols('x', real = True)
         
         # Defino la expresión simbólica:
         self.formula = Propagacion_errores.traductor_numpy_sympy(self.formula)
         formula = eval(self.formula)
         
         # Calculo la aproximación lineal de la covarianza de el i-ésimo dato con el j-ésimo y sumo:
-        derivadas_parciales = [diff(formula, eval(sim)) for sim in simbolos]
+        derivadas_parciales = {sim:diff(formula, eval(sim)) for sim in simbolos}
         covarianza_resultado = 0
-        for i in range(len(simbolos)):
-            for j in range(len(simbolos)):
-                covarianza_resultado += derivadas_parciales[i]*self.covarianza[i, j]*derivadas_parciales[j]
+        for sim in simbolos:
+            for sim_2 in simbolos:
+                covarianza_resultado += derivadas_parciales[sim]*covar_simb[(sim, sim_2)]*derivadas_parciales[sim_2]
         
         # Fórmula del error simbólico
         error_simbolico = sqrt(covarianza_resultado)
 
         # Convierto la expresión simbólica en un módulo numérico (numpy) para poder reemplazar:
         if isinstance(self.dominio, np.ndarray):
-            lambd_err = lambdify(['x_'] + simbolos, error_simbolico, modules = ['numpy'])
-            lambd_val = lambdify(['x_'] + simbolos, formula, modules = ['numpy'])
+            lambd_err = lambdify(['x'] + simbolos, error_simbolico, modules = ['numpy'])
+            lambd_val = lambdify(['x'] + simbolos, formula, modules = ['numpy'])
             valores = [self.dominio] + valores
             self.valor, self.error = lambd_val(*valores), lambd_err(*valores)
 
@@ -191,7 +197,7 @@ if __name__ == '__main__':
     error = np.full(len(remanencia), 2.77680184e-08)
 
     # Hago el ajuste
-    formula = 'np.piecewise(x_, [x_ < a_0, x_ >= a_0], [lambda x_: a_1*np.abs(x_- a_0)**(a_2) + a_3, a_3])'
-    formula = formula.replace('x_', str(float(3)))
+    formula = 'np.piecewise(x, [x < a_0, x >= a_0], [lambda x: a_1*np.abs(x- a_0)**(a_2) + a_3, a_3])'
+    formula = formula.replace('x', str(float(3)))
     variables = [('a_0',2.48909942e+02), ('a_1',6.70276581e-02),('a_2',4.48016420e-01),('a_3',1.42274642e-02)]
     print(Propagacion_errores(formula = formula, variables = variables, errores = error.reshape(-1,1)).fit())

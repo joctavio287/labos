@@ -1,11 +1,9 @@
-from sklearn.preprocessing import PolynomialFeatures
 from scipy.optimize import curve_fit
 from labos.propagacion import Propagacion_errores
 import numpy as np, matplotlib.pyplot as plt, re, os
 
 class Ajuste:
-    modelos = ['regresion_lineal', 'curve_fit']
-    estilos_graficos = ['ajuste_1', 'ajuste_2', 'slider', 'errores'] #TODO: slider no implementado
+    estilos_graficos = ['datos','ajuste_1', 'ajuste_2', 'slider', 'residuos'] #TODO: slider no implementado
 
     def __init__(self, x: np.array, y: np.array, cov_y: np.array = None) -> None:
         '''
@@ -50,7 +48,6 @@ class Ajuste:
 
         # Hiperparámetros que se definen dentro de la clase
         self.y_modelo = None
-        self.vander = None
         self.parametros = None
         self.cov_parametros = None
         self.r = None
@@ -75,27 +72,19 @@ class Ajuste:
         self.bondad()
         return texto
 
-    def fit(self, modelo:str, **kwargs):
+    def fit(self, formula:str, **kwargs):
         '''
         Actualiza los coeficientes del ajuste y su matriz de covarianza acorde al modelo especificad
         o.
 
         INPUT:
-        modelo: str: se deberá elegir entre 'regresion_lineal' ó 'curve_fit' de la librería scipy. S
-        i se elige la última, se deberá incluir, además, el siguiente parámetro.
-        
         expr: str: función de ajuste expresada como str. Es necesario que los parámetros tomen la fo
         rma 'letra_i' con i = 0, 1, 2, 3... Se debe respetar el orden en las varibles y para funcion
         es especiales usar la libreria numpy. Ejemplo:
         >> expr = 'a_0 + a_1*x**2 + np.sin(a_2*x)**3'
 
-        **kwargs
-        REGRESIÓN LINEAL:
-        n: int: orden de la regresión.
-        ordenada: bool: si incluir o no la ordenada al origen como parámetro a determinar. Si ordena
-        da=False entonces se asume que es nula.
-
-        CURVE FIT:https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
+        **kwargs CURVE FIT:https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve
+        _fit.html
         p0: np.array: valores iniciales de los parámetros. Deben incluirse todos, de no pasar este p
         arámetro se tomara np.ones(shape = self.parametros.shape).
         
@@ -115,78 +104,30 @@ class Ajuste:
         n using the scaled sigma equals unity. In other words, sigma is scaled to match the sample v
         ariance of the residuals after the fit. Default is False. Mathematically, pcov(absolute_sigm
         a=False) = pcov(absolute_sigma=True) * chisq(popt)/(M-N).
-        '''        
-        # Chequea que el modelo especificado exista
-        if modelo in Ajuste.modelos:
-            pass
-        else:
-            raise Exception(f"No existe el modelo {modelo}")
-
-        if modelo == 'regresion_lineal':
-            self.parametros, self.cov_parametros = self.regresion_lineal(**kwargs)
-
-            # Los datos predecidos por el modelo
-            self.y_modelo = np.dot(self.vander, self.parametros)
-
-        elif modelo == 'curve_fit':
-            self.expr = kwargs['expr']
-
-            # Define una función en base a la expresión especificada en los parámetros
-            func = Ajuste.define_func(self.expr)
-
-            # Se elimina la variable para prevenir que la lea curve_fit (no es un parámetro)
-            kwargs.pop('expr')
-            
-            if self.x.shape[1]==1:
-                self.parametros, self.cov_parametros = curve_fit(
-                f = func,
-                xdata = self.x.reshape(-1),
-                ydata = self.y.reshape(-1),
-                sigma = self.cov_y, # se puede pasar sigma en lugar de cov_y
-                **kwargs) 
-            else:
-                self.parametros, self.cov_parametros = curve_fit(
-                f = func,
-                xdata = self.x,
-                ydata = self.y,
-                sigma = self.cov_y, # se puede pasar sigma en lugar de cov_y
-                **kwargs) 
-            
-            # Los datos predecidos por el modelo
-            self.y_modelo = func(self.x, *self.parametros)
-    
-    def regresion_lineal(self, n:int = 1, ordenada:bool = False):
         '''
-        Realiza una regresión lineal y actualiza la matriz de Vandermonde.
+        self.expr = formula
 
-        INPUT:
-        n: int: orden de la regresión.
+        # Define una función en base a la expresión especificada en los parámetros
+        func = Ajuste.define_func(self.expr)
         
-        ordenada: bool: si incluir o no la ordenada al origen como parámetro a determinar. Si ordena
-        da=False entonces se asume que es nula.
-
-        OUTPUT:
-        parametros: np.array: los parámetros del ajuste.
+        if self.x.shape[1]==1:
+            self.parametros, self.cov_parametros = curve_fit(
+            f = func,
+            xdata = self.x.reshape(-1),
+            ydata = self.y.reshape(-1),
+            sigma = self.cov_y, # se puede pasar sigma en lugar de cov_y
+            **kwargs) 
+        else:
+            self.parametros, self.cov_parametros = curve_fit(
+            f = func,
+            xdata = self.x,
+            ydata = self.y,
+            sigma = self.cov_y, # se puede pasar sigma en lugar de cov_y
+            **kwargs) 
         
-        cov_parametros: np.array: la matriz de covarianza de los parámetros del ajuste.
-        '''        
-        # Matriz de Vandermonde:
-        pfeats = PolynomialFeatures(degree = n, include_bias = ordenada)
-        vander = pfeats.fit_transform(self.x)
-        self.vander = vander.copy()
-        
-        # Calculos auxilares:
-        inversa_cov = np.linalg.inv(self.cov_y)
-        auxiliar = np.linalg.inv(np.dot(np.dot(vander.T, inversa_cov), vander))
+        # Los datos predecidos por el modelo
+        self.y_modelo = func(self.x, *self.parametros)
 
-        # Parámetros [At.Cov-1. A]-1.At.Cov-1.y = [a_0, a_1, ..., a_n]t
-        parametros = np.dot(np.dot(np.dot(auxiliar, vander.T), inversa_cov), self.y) 
-
-        # Matriz de covarianza de los parámetros [At.Cov-1.A]-1
-        cov_parametros = np.linalg.inv(np.dot(vander.T, np.dot(inversa_cov, vander)))
-           
-        return parametros, cov_parametros
-    
     def bondad(self):
         '''
         Calcula coeficientes para determinar la bondad del ajuste: r, R^2, Xi^2 y Xi^2 reducido.
@@ -242,10 +183,11 @@ class Ajuste:
         texto += f' -Chi cuadrado reducido: {self.reduced_chi_2}.'
         print(texto)
 
-    def graph(self, estilo:str, label_x: str = 'x', label_y: str = 'y', alpha: float = 1000, save:bool = False, path:str = os.path.join(os.getcwd() + os.path.normpath('/ajuste.png'))):
+    def graph(self, estilo:str = 'datos', label_x: str = 'x', label_y: str = 'y', x_auxiliar: np.array = None, save:bool = False, path:str = os.path.join(os.getcwd() + os.path.normpath('/ajuste.png'))):
         '''
         Grafica los datos ajustados de distintas formas.
-        -'errores': realiza un gráfico con los residuos de cada dato.
+        -'datos': realiza un gráfico con los datos.
+        -'residuos': realiza un gráfico con los residuos de cada dato.
         -'ajuste_1': realiza un gráfico del tipo errorbar con los datos y la curva del ajuste en
         cima.
         -'ajuste_2': realiza un gráfico del tipo errorbar con los datos y la curva del ajuste en
@@ -254,12 +196,9 @@ class Ajuste:
         -'slider': realiza un gráfico interactivo del ajuste en el cual se pueden variar los par
         ámetros para ver con qué valor es conveniente inicializar el ajuste.
 
-        estilos_graficos = ['ajuste_1', 'ajuste_2', 'slider', 'errores'] SLIDER NO IMPL
-                Realiza una regresión lineal y actualiza la matriz de Vandermonde.
-
         INPUT:
-        estilo: str: qué gráfico hacer. Se puede seleccionar entre: 'ajuste_1', 'ajuste_2', 'errore
-        s' y 'slider'.
+        estilo: str: qué gráfico hacer. Se puede seleccionar entre: 'ajuste_1', 'ajuste_2', 'res
+        iduos', 'datos y 'slider'.
         
         label_x: str: nombre del label del eje horizontal.
         
@@ -282,6 +221,10 @@ class Ajuste:
         
         cov_parametros: np.array: la matriz de covarianza de los parámetros del ajuste.
         '''
+        # Si no se provee tira auxiliar, se toma un vector igual que x, pero con 1000 veces mas puntos
+        if x_auxiliar is None:
+            x_auxiliar = np.linspace(self.x[0], self.x[-1], len(self.x)*1000).reshape(-1)
+
         # Chequeo que el estilo este dentro de los disponibles
         if estilo in Ajuste.estilos_graficos:
             pass
@@ -289,7 +232,25 @@ class Ajuste:
             var = ', '.join(Ajuste.estilos_graficos)
             raise Exception(f"No existe el gráfico {estilo}. Los disponibles son: {var}")
 
-        if estilo == 'errores':
+        # Tipo 'datos'            
+        if estilo == 'datos':
+            # Creo la figura y grafico
+            fig, ax = plt.subplots(nrows = 1, ncols = 1)
+            eje_x = np.zeros(shape = self.y.shape)
+            ax.scatter(x = self.x, y = self.y, s = 5, color = 'black', label = 'Datos')
+            ax.errorbar(self.x.reshape(-1), self.y.reshape(-1), yerr = self.sigma_y.reshape(-1), marker = '.', fmt = 'None', capsize = 1.5, color = 'black', label = 'Error de los datos')
+            ax.set_xlabel(xlabel = label_x)
+            ax.set_ylabel(ylabel = label_y)
+            ax.grid()
+            ax.legend()
+            fig.tight_layout()
+            if save:
+                fig.savefig(path)
+            else:
+                fig.show()
+
+        # Tipo 'residuos'
+        elif estilo == 'residuos':
             # Calculo los residuos
             residuos = self.y_modelo - self.y
             
@@ -309,22 +270,10 @@ class Ajuste:
             else:
                 fig.show()
 
+        # Tipo 'ajuste_1'
         elif estilo == 'ajuste_1':
-            
-            # Ajuste si se usa curve_fit o regresion_lineal
-            if self.expr is not None:
-                # Tiras auxiliares para graficar, tomo más puntos que los datos
-                x_auxiliar = np.linspace(self.x[0], self.x[-1], len(self.x)*alpha).reshape(-1)
-                ajuste = Ajuste.define_func(self.expr)(x_auxiliar, *self.parametros).reshape(-1)
-            else:
-                # Tiras auxiliares para graficar, tomo más puntos que los datos
-                x_auxiliar = np.linspace(self.x[0], self.x[-1], len(self.x)*alpha).reshape(-1)
-                if len(self.parametros) == 1:
-                    ajuste = self.parametros[0]*x_auxiliar
-                else:
-                    # Si se pasa ordenada = True
-                    ajuste = self.parametros[0] + self.parametros[1]*x_auxiliar
-                
+            # Tiras auxiliares para graficar, tomo más puntos que los datos
+            ajuste = Ajuste.define_func(self.expr)(x_auxiliar, *self.parametros).reshape(-1)
 
             # Creo la figura y grafico
             fig, ax = plt.subplots(nrows = 1, ncols = 1)
@@ -341,51 +290,21 @@ class Ajuste:
             else:
                 fig.show()
 
-
+        # Tipo 'ajuste_2'
         elif estilo == 'ajuste_2':
-            # Ajuste si se usa curve_fit o regresion_lineal
-            if self.expr is not None:
-                # Tiras auxiliares para graficar, tomo más puntos que los datos
-                x_auxiliar = np.linspace(self.x[0], self.x[-1], len(self.x)*alpha).reshape(-1)
-                ajuste = Ajuste.define_func(self.expr)(x_auxiliar, *self.parametros).reshape(-1)
-                variables_nom = np.unique([var.group() for var in re.finditer(pattern = '[a-z]\_\d', string = self.expr)]).tolist()
-                variables = [(variables_nom[i], self.parametros[i]) for i in range(len(variables_nom))]
-                
-                # Calculo el error del ajuste para cada dato
-                franja_error = Propagacion_errores(
-                variables = variables, 
-                errores = self.cov_parametros, 
-                formula = self.expr, 
-                dominio = x_auxiliar
-                ).fit()[1]                
-            else:
-                # Tiras auxiliares para graficar, tomo más puntos que los datos
-                x_auxiliar = np.linspace(self.x[0], self.x[-1], len(self.x)*alpha).reshape(-1)
-                if len(self.parametros) == 1:
-                    # El ajuste y las variables
-                    ajuste = self.parametros[0]*x_auxiliar
-                    variables = [('a_0',self.parametros[0])]
+            # Tiras auxiliares para graficar, tomo más puntos que los datos
+            ajuste = Ajuste.define_func(self.expr)(x_auxiliar, *self.parametros).reshape(-1)
+            variables_nom = np.unique([var.group() for var in re.finditer(pattern = '[a-z]\_\d', string = self.expr)]).tolist()
+            variables = [(variables_nom[i], self.parametros[i]) for i in range(len(variables_nom))]
+            
+            # Calculo el error del ajuste para cada dato
+            franja_error = Propagacion_errores(
+            variables = variables, 
+            errores = self.cov_parametros, 
+            formula = self.expr, 
+            dominio = x_auxiliar
+            ).fit()[1]                
 
-                    # Calculo el error del ajuste para cada dato
-                    franja_error = Propagacion_errores(
-                    variables = variables, 
-                    errores = self.cov_parametros, 
-                    formula = 'a_0*x_', 
-                    dominio = x_auxiliar
-                    ).fit()[1]                    
-                else:
-                    # Si se pasa ordenada = True
-                    ajuste = self.parametros[0] + self.parametros[1]*x_auxiliar
-                    variables = [('a_0',self.parametros[0]), ('a_1', self.parametros[1])]
-            
-                    # Calculo el error del ajuste para cada dato
-                    franja_error = Propagacion_errores(
-                    variables = variables, 
-                    errores = self.cov_parametros, 
-                    formula = 'a_0 + a_1*x_', 
-                    dominio = x_auxiliar
-                    ).fit()[1]
-            
             # Creo la figura y grafico
             fig, ax = plt.subplots(nrows = 1, ncols = 1)
             ax.scatter(x = self.x, y = self.y, s = 5, color = 'black', label = 'Datos')
@@ -403,6 +322,7 @@ class Ajuste:
                 fig.savefig(path)
             else:
                 fig.show()
+
         elif estilo == 'slider':
             raise Exception('No implementado todavía')
 
@@ -415,7 +335,7 @@ class Ajuste:
         INPUT:
         expr: str: formula de la función a fittear.
         '''        
-        n_vars = ['x_'] + np.unique([var.group() for var in re.finditer(pattern = '[a-z]\_\d', string = expr)]).tolist()
+        n_vars = ['x'] + np.unique([var.group() for var in re.finditer(pattern = '[a-z]\_\d', string = expr)]).tolist()
         args = ', '.join(n_vars)
         expresion = expr
         exec(f'def func({args}):\n    import numpy as np\n    return {expresion}', locals())
@@ -424,26 +344,33 @@ class Ajuste:
 if __name__ == '__main__':
 
     # EJEMPLO 1D:
-    x = np.linspace(0,100,40)
+    x = np.linspace(0,10,20)
+    y = x*0.25 + 3
     # y = 1 + 2*np.sin(0.1*x)*np.exp(-.5*x)
-    # y = x*0.25 + 3
-    y = np.piecewise(x = x, condlist = [x<=40 , x>40], funclist = [lambda x : 2*np.exp(-.04*x),.4])
-    sigma = .05
+    # y = np.piecewise(x = x, condlist = [x<=40 , x>40], funclist = [lambda x : 2*np.exp(-.04*x),.4])
+    sigma = .2
     signal = np.random.normal(y, sigma, size = y.shape)
- 
-    # expr = 'a_0 + a_1*np.sin(.1*x_)*np.exp(a_2*x_)'
-    expr = 'np.piecewise(x = x_, condlist = [x_<=a_0 , x_>a_0], funclist = [lambda x_ : a_1*np.exp(-a_2*x_),a_3])'
+    
+    # x = np.array([2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00])
+    # signal = np.array([2.78, 3.29, 3.29, 3.33, 3.23, 3.69, 3.46, 3.87, 3.62, 3.40, 3.99])
+    # sigma = .3
 
-    aj = Ajuste(x, signal, cov_y = np.array([sigma for i in x]).reshape(-1,1))
-    # aj.fit(modelo='curve_fit', expr = expr, bounds =([-10, 0, -np.inf] , [10, 10, 0]))
-    aj.fit(modelo='curve_fit', expr = expr, p0 = [40,2,.04,.4], method = 'dogbox')
-    # aj.fit(modelo = 'regresion_lineal', ordenada = True)
-    aj.graph(estilo = 'ajuste_1')
-    aj.graph(estilo = 'errores', label_x = 'Tiempo [s]', label_y = r'Tension [$\propto V$]')
-    aj.graph(estilo = 'ajuste_2', label_x = 'Tiempo [s]', label_y = r'Tension [$\propto V$]')
-    aj.parametros
+    expr = 'a_0 + a_1*x'
+    # expr = 'a_0 + a_1*np.sin(.1*x)*np.exp(-a_2*x)'
+    # expr = 'np.piecewise(x = x, condlist = [x<=a_0 , x>a_0], funclist = [lambda x : a_1*np.exp(-a_2*x),a_3])'
+
+    aj = Ajuste(x, signal, cov_y = np.full(shape = (len(signal),1), fill_value = sigma*1.5))
+    aj.graph()
+    
+    # aj.fit(formula = expr, bounds =([-10, 0, -np.inf] , [10, 10, 0]))
+    aj.fit(formula = expr)#, p0 = [40,2,.04,.4], method = 'dogbox')
+    aj.parametros, aj.cov_parametros
+    auxiliar = np.linspace(-15,35,1000)
+    aj.graph(estilo = 'ajuste_1', x_auxiliar = auxiliar)
+    aj.graph(estilo = 'residuos', label_x = 'Tiempo [s]', label_y = r'Tension [$\propto V$]')
+    
+    aj.graph(estilo = 'ajuste_2', label_x = 'Tiempo [s]', label_y = r'Tension [$\propto V$]', x_auxiliar = auxiliar)
     aj.bondad()
-    aj.cov_parametros
 
     # # EJEMPLO CON DOMINIO 2D
     # x_1 = np.linspace(0, 100, 70).reshape(-1,1)
