@@ -11,8 +11,37 @@ Los paquetes hasta ahora implementados son de adquisición y análisis de datos.
 Este paquete está dedicado a propagar errores utilizando una aproximación lineal sobre la formula de covarianza. El paquete está basado en las librerías numpy e sympy.
 ```python
 from labos.propagacion import Propagacion_errores
-print("hello world")
+import numpy as np
+
+# Formula a propagar
+expr = 'A*cos(f*t) + C'    
+
+# Las variables dependientes y sus valores
+variables = [
+    ('f', 100), # Hz
+    ('A', 2), # Volts
+    ('t', 1), # s
+    ('C', .5), # Volts
+    ]
+
+# Los errores de las variables
+errores = np.array(
+    [.0005,
+    .0001, 
+    0, 
+    .0001]
+    ).reshape(-1,1)
+
+# Instancia de la clase
+propaga = Propagacion_errores(
+    formula = expr,
+    variables = variables,
+    errores = errores)
+propaga.fit()
+>>(2.224637744575368, 0.0005232992460070357)
 ```
+### Ajuste
+Este paquete está dedicado a realizar ajustes sobre datos. El paquete está basado en las librerías numpy e sympy.
 
 #### Heading 3
 ##### Heading 4
