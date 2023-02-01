@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "labos"
-version = "0.1.2.6"
+version = "0.1.2.7"
 description = "Paquete para trabajar en el labo"
 authors = ["joctavio287 <joctavio287@gmail.com>"]
 readme = "README.md"
