@@ -36,6 +36,6 @@ if __name__ == '__main__':
     mensaje_tel(
     api_token = '5448153732:AAGhKraJQquEqMfpD3cb4rnTcrKB6U1ViMA',
     chat_id = '-693150998',
-    mensaje = 'Yo soy el bot de Python y Octavio me está probando'
+    mensaje = '¿Querés hacerme una pregunta?'
     )
     
