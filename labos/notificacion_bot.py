@@ -19,9 +19,9 @@ def mensaje_tel(api_token:str, chat_id: str, mensaje: str = 'Termino de correr e
     api_url = f'https://api.telegram.org/bot{api_token}/sendMessage'
     try:
         response = requests.post(api_url, json={'chat_id': chat_id, 'text': mensaje})
-        print(response.text)
+        return response.text
     except Exception as e:
-        print(e)
+        return e
 
 if __name__ == '__main__':
     # El API token se saca de BotFather
